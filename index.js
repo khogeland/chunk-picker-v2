@@ -4764,6 +4764,7 @@ let unlockEntry = function() {
                 firebase.auth().signInWithEmailAndPassword('sourcechunk+' + mid + '@yandex.com', savedPin + mid).then((userCredential) => {
                     doUnlock(userCredential.user);
                 }).catch((error) => {
+                    console.log(error);
                     $('.pin.entry').addClass('animated shake wrong').select();
                     $('#unlock-entry').prop('disabled', true).html('Unlock');
                     console.error('Incorrect map password');
@@ -5676,11 +5677,6 @@ let setupMap = async function() {
             $('.pin.entry').focus();
         }
         !mid && (mid = window.location.href.split('?')[1]);
-        firebase.auth().onAuthStateChanged((user) => {
-            if (user != null) {
-                doUnlock(user);
-            }
-        })
         document.title = mid.split('-')[0].toUpperCase() + ' - Chunk Picker V2';
         $('.toptitle2').text(mid.split('-')[0].toUpperCase());
         if (mid === 'jvb') { // Chunky Boys
@@ -5688,6 +5684,9 @@ let setupMap = async function() {
         }
         toggleChallengesPanel('active');
         await loadData(true);
+        if (firebase.auth().currentUser != null) {
+            doUnlock(firebase.auth().currentUser);
+        }
     }
 }
 
