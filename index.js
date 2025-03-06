@@ -4708,11 +4708,48 @@ let checkPin = function() {
     changeLocked();
 }
 
+let doUnlock = function(user) {
+    signedIn = true;
+    $('.center').css('margin-top', '15px');
+    $('.lock-opened, .pick, #toggleNeighbors, #toggleRemove, .toggleNeighbors.text, .toggleRemove.text, .import, .pinchange, .toggleNeighbors, .toggleRemove, .roll2toggle, .unpicktoggle, .recenttoggle, .highscoretoggle, .settingstoggle, .friendslist, .blacklist-mobile, .open-sticker-mobile, .taskstoggle').css('opacity', 0).show();
+    roll2On && $('.roll2').css('opacity', 0).show();
+    !isPicking && unpickOn && $('.unpick').css('opacity', 0).show();
+    $('.open-manual-outer-container').css('opacity', 0).show();
+    $('.dropdown-item-customize-topbar').css('opacity', 0).show();
+    rules['Manually Complete Tasks'] && $('.open-complete-container').css('opacity', 0).show();
+    $('#entry-menu').animate({ 'opacity': 0 });
+    myRef.child('mapCreationTimes/' + mid).once('value', function(snap) {
+        if (!snap.val()) {
+            databaseRef.child('mapCreationTimes/' + mid).set(new Date(user.metadata.creationTime).getTime());
+        }
+    });
+    setTimeout(function() {
+        $('#entry-menu').css('opacity', 1).hide();
+        $('.pin.entry').val('');
+        $('.lock-opened, .pick, #toggleNeighbors, #toggleRemove, .toggleNeighbors.text, .toggleRemove.text, .import, .pinchange, .toggleNeighbors, .toggleRemove, .roll2toggle, .unpicktoggle, .recenttoggle, .highscoretoggle, .settingstoggle, .friendslist, .blacklist-mobile, .open-sticker-mobile, .taskstoggle').animate({ 'opacity': 1 });
+        roll2On && $('.roll2').animate({ 'opacity': 1 });
+        !isPicking && unpickOn && $('.unpick').animate({ 'opacity': 1 });
+        $('.open-manual-outer-container').animate({ 'opacity': 1 });
+        $('.dropdown-item-customize-topbar').animate({ 'opacity': 1 });
+        rules['Manually Complete Tasks'] && $('.open-complete-container').animate({ 'opacity': 1 });
+        $('#unlock-entry').prop('disabled', false).html('Unlock');
+        locked = false;
+        inEntry = false;
+        helpMenuOpenSoon && helpFunc();
+        patchNotesOpenSoon && openPatchNotesModal();
+        mapIntroOpenSoon && openMapIntroModal(justStartingChunkSet);
+        unlockChallenges();
+        setRecentLogin();
+        !doesPluginOutputExist && setData();
+    }, 500);
+}
+
 // Confirms if the pin is entered correctly in the entry menu, and acts accordingly
 let unlockEntry = function() {
     savedPin = $('.pin.entry').val();
     $('#unlock-entry').prop('disabled', true).html('<i class="spin fas fa-spinner"></i>');
-    firebase.auth().fetchSignInMethodsForEmail('sourcechunk+' + mid + '@yandex.com').then((methods) => {
+    firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(() => {
+    return firebase.auth().fetchSignInMethodsForEmail('sourcechunk+' + mid + '@yandex.com').then((methods) => {
         if (signInAttempts > 15) {
             setTimeout(function() {
                 $('.pin.entry').addClass('animated shake wrong').select();
@@ -4725,39 +4762,7 @@ let unlockEntry = function() {
         } else if (!!methods && methods.length > 0) {
             setTimeout(function() {
                 firebase.auth().signInWithEmailAndPassword('sourcechunk+' + mid + '@yandex.com', savedPin + mid).then((userCredential) => {
-                    signedIn = true;
-                    $('.center').css('margin-top', '15px');
-                    $('.lock-opened, .pick, #toggleNeighbors, #toggleRemove, .toggleNeighbors.text, .toggleRemove.text, .import, .pinchange, .toggleNeighbors, .toggleRemove, .roll2toggle, .unpicktoggle, .recenttoggle, .highscoretoggle, .settingstoggle, .friendslist, .blacklist-mobile, .open-sticker-mobile, .taskstoggle').css('opacity', 0).show();
-                    roll2On && $('.roll2').css('opacity', 0).show();
-                    !isPicking && unpickOn && $('.unpick').css('opacity', 0).show();
-                    $('.open-manual-outer-container').css('opacity', 0).show();
-                    $('.dropdown-item-customize-topbar').css('opacity', 0).show();
-                    rules['Manually Complete Tasks'] && $('.open-complete-container').css('opacity', 0).show();
-                    $('#entry-menu').animate({ 'opacity': 0 });
-                    myRef.child('mapCreationTimes/' + mid).once('value', function(snap) {
-                        if (!snap.val()) {
-                            databaseRef.child('mapCreationTimes/' + mid).set(new Date(userCredential.user.metadata.creationTime).getTime());
-                        }
-                    });
-                    setTimeout(function() {
-                        $('#entry-menu').css('opacity', 1).hide();
-                        $('.pin.entry').val('');
-                        $('.lock-opened, .pick, #toggleNeighbors, #toggleRemove, .toggleNeighbors.text, .toggleRemove.text, .import, .pinchange, .toggleNeighbors, .toggleRemove, .roll2toggle, .unpicktoggle, .recenttoggle, .highscoretoggle, .settingstoggle, .friendslist, .blacklist-mobile, .open-sticker-mobile, .taskstoggle').animate({ 'opacity': 1 });
-                        roll2On && $('.roll2').animate({ 'opacity': 1 });
-                        !isPicking && unpickOn && $('.unpick').animate({ 'opacity': 1 });
-                        $('.open-manual-outer-container').animate({ 'opacity': 1 });
-                        $('.dropdown-item-customize-topbar').animate({ 'opacity': 1 });
-                        rules['Manually Complete Tasks'] && $('.open-complete-container').animate({ 'opacity': 1 });
-                        $('#unlock-entry').prop('disabled', false).html('Unlock');
-                        locked = false;
-                        inEntry = false;
-                        helpMenuOpenSoon && helpFunc();
-                        patchNotesOpenSoon && openPatchNotesModal();
-                        mapIntroOpenSoon && openMapIntroModal(justStartingChunkSet);
-                        unlockChallenges();
-                        setRecentLogin();
-                        !doesPluginOutputExist && setData();
-                    }, 500);
+                    doUnlock(userCredential.user);
                 }).catch((error) => {
                     $('.pin.entry').addClass('animated shake wrong').select();
                     $('#unlock-entry').prop('disabled', true).html('Unlock');
@@ -4834,7 +4839,7 @@ let unlockEntry = function() {
                 }
             });
         }
-    });
+    })});
 }
 
 // Hides the entry menu and displays map in locked mode
@@ -5678,6 +5683,11 @@ let setupMap = async function() {
         }
         toggleChallengesPanel('active');
         await loadData(true);
+        firebase.auth().onAuthStateChanged((user) => {
+            if (user != null) {
+                doUnlock(user);
+            }
+        })
     }
 }
 
@@ -11285,10 +11295,10 @@ let checkMID = function(mid) {
 let regainConnectivity = function(_callback) {
     if (Date.now() > lastRegain + 1000) {
         lastRegain = Date.now();
-        firebase.auth().signOut();
-        firebase.auth().signInWithEmailAndPassword('sourcechunk+' + mid + '@yandex.com', savedPin + mid).then(() => {
-            _callback();
-        });
+        //firebase.auth().signOut();
+        //firebase.auth().signInWithEmailAndPassword('sourcechunk+' + mid + '@yandex.com', savedPin + mid).then(() => {
+            //_callback();
+        //});
     }
 }
 
